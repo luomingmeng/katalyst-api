@@ -174,7 +174,7 @@ func (in *ServiceProfileDescriptorSpec) DeepCopyInto(out *ServiceProfileDescript
 	out.TargetRef = in.TargetRef
 	if in.BaselineRatio != nil {
 		in, out := &in.BaselineRatio, &out.BaselineRatio
-		*out = new(float32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.BusinessIndicator != nil {

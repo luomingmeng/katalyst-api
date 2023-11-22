@@ -43,9 +43,10 @@ spec:
                   and can be compared with other (experimental/production) instances
                   to demonstrate the benefits. if BaselineRatio not set, it means
                   we should take all instances as production instances.
-                maximum: 1
+                format: int32
+                maximum: 100
                 minimum: 0
-                type: number
+                type: integer
               businessIndicator:
                 description: if multiple BusinessIndicator are defined, it means that
                   we should try to satisfy all of those indicator targets

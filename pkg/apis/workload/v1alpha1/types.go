@@ -54,10 +54,10 @@ type ServiceProfileDescriptorSpec struct {
 	// for them; those instances are defined as baselines, and can be compared
 	// with other (experimental/production) instances to demonstrate the benefits.
 	// if BaselineRatio not set, it means we should take all instances as production instances.
-	// +kubebuilder:validation:Minimum=0.0
-	// +kubebuilder:validation:Maximum=1.0
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
 	// +optional
-	BaselineRatio *float32 `json:"baselineRatio,omitempty"`
+	BaselineRatio *int32 `json:"baselineRatio,omitempty"`
 
 	// if multiple BusinessIndicator are defined, it means that we should
 	// try to satisfy all of those indicator targets
