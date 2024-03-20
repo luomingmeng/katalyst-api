@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"bytes"
 	"fmt"
+	"k8s.io/klog/v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -138,9 +139,11 @@ const (
 )
 
 func (c *ServiceExtendedIndicatorSpec) decodeNestedObjects(d runtime.Decoder) error {
+	klog.Errorf("extended inidcator decodeNestedObjects")
 	gvk := SchemeGroupVersion.WithKind(c.Name + ExtendedIndicatorSuffix)
 	// dry-run to detect and skip out-of-tree extended indicators.
 	if _, _, err := d.Decode(nil, &gvk, nil); runtime.IsNotRegisteredError(err) {
+		klog.Errorf("extended inidcator %v is not resgisted", gvk)
 		return nil
 	}
 
