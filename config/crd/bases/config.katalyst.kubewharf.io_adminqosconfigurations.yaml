@@ -815,15 +815,19 @@ spec:
                             description: BulkheadConfig is the dynamic config for
                               core bulkhead plugins.
                             properties:
+                              enable:
+                                description: Enable controls whether core bulkhead
+                                  is enabled.
+                                type: boolean
                               enableBulkheadCpusetTopology:
                                 description: |-
                                   EnableBulkheadCpusetTopology controls whether the core bulkhead cpuset
-                                  topology plugin is enabled when EnableBypassCPUSetAdjustment is true.
+                                  topology plugin is enabled when Enable is true.
                                 type: boolean
                               enableBulkheadWorkqueue:
                                 description: |-
                                   EnableBulkheadWorkqueue controls whether the core bulkhead workqueue
-                                  plugin writes workqueue cpumasks from the shared CPUSetPartitionView.
+                                  plugin is enabled when Enable is true.
                                 type: boolean
                             type: object
                           disableSharedCoresRampUp:

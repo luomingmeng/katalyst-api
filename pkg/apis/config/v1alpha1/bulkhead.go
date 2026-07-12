@@ -17,12 +17,15 @@ limitations under the License.
 package v1alpha1
 
 type BulkheadConfig struct {
+	// Enable controls whether core bulkhead is enabled.
+	// +optional
+	Enable *bool `json:"enable,omitempty"`
 	// EnableBulkheadCpusetTopology controls whether the core bulkhead cpuset
-	// topology plugin is enabled when EnableBypassCPUSetAdjustment is true.
+	// topology plugin is enabled when Enable is true.
 	// +optional
 	EnableBulkheadCpusetTopology *bool `json:"enableBulkheadCpusetTopology,omitempty"`
 	// EnableBulkheadWorkqueue controls whether the core bulkhead workqueue
-	// plugin writes workqueue cpumasks from the shared CPUSetPartitionView.
+	// plugin is enabled when Enable is true.
 	// +optional
 	EnableBulkheadWorkqueue *bool `json:"enableBulkheadWorkqueue,omitempty"`
 }
