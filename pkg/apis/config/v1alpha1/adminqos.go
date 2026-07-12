@@ -389,6 +389,9 @@ type CPUPluginConfig struct {
 	// Allocate/AllocateForPod keep their cpuset unchanged.
 	// +optional
 	EnableBypassCPUSetAdjustment *bool `json:"enableBypassCPUSetAdjustment,omitempty"`
+	// BulkheadConfig is the dynamic config for core bulkhead plugins.
+	// +optional
+	BulkheadConfig *BulkheadConfig `json:"bulkheadConfig,omitempty"`
 	// DisableSharedCoresRampUp disables initial full-pool cpuset binding for
 	// newly scheduled shared_cores pods. When true, shared_cores pods are allocated
 	// from their target pool directly instead of entering RampUp.

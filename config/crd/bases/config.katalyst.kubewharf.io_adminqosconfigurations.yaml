@@ -811,6 +811,21 @@ spec:
                       cpuPluginConfig:
                         description: CPUPluginConfig is the config for cpu plugin
                         properties:
+                          bulkheadConfig:
+                            description: BulkheadConfig is the dynamic config for
+                              core bulkhead plugins.
+                            properties:
+                              enableBulkheadCpusetTopology:
+                                description: |-
+                                  EnableBulkheadCpusetTopology controls whether the core bulkhead cpuset
+                                  topology plugin is enabled when EnableBypassCPUSetAdjustment is true.
+                                type: boolean
+                              enableBulkheadWorkqueue:
+                                description: |-
+                                  EnableBulkheadWorkqueue controls whether the core bulkhead workqueue
+                                  plugin writes workqueue cpumasks from the shared CPUSetPartitionView.
+                                type: boolean
+                            type: object
                           disableSharedCoresRampUp:
                             description: |-
                               DisableSharedCoresRampUp disables initial full-pool cpuset binding for
