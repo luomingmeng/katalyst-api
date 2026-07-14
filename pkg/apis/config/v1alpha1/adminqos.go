@@ -413,6 +413,13 @@ type CPUPluginConfig struct {
 	// +kubebuilder:validation:Minimum=1
 	// +optional
 	SystemExclusivePoolShrinkMax *int64 `json:"systemExclusivePoolShrinkMax,omitempty"`
+	// BindIRQToReclaimedPool, when set to true, requests that the CPU plugin
+	// pin all network IRQs into the reclaimed pool's cpuset (i.e. GetIRQForbiddenCores
+	// will forbid every CPU that is NOT in the reclaimed pool, subject to reservedCPUs
+	// still being included in the forbidden set). If the reclaimed pool is absent
+	// or empty on the node the plugin falls back to the previous behavior.
+	// +optional
+	BindIRQToReclaimedPool *bool `json:"bindIRQToReclaimedPool,omitempty"`
 }
 
 type EvictionConfig struct {

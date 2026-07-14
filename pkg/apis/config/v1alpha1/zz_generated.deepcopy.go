@@ -605,6 +605,11 @@ func (in *CPUPluginConfig) DeepCopyInto(out *CPUPluginConfig) {
 		*out = new(int64)
 		**out = **in
 	}
+	if in.BindIRQToReclaimedPool != nil {
+		in, out := &in.BindIRQToReclaimedPool, &out.BindIRQToReclaimedPool
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
