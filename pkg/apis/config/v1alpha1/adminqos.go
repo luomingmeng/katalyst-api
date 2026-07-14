@@ -384,9 +384,10 @@ type CPUPluginConfig struct {
 	// The calculation results may originate from upstream components and be recorded in the pod annotation
 	// +optional
 	PreferUseExistNUMAHintResult *bool `json:"preferUseExistNUMAHintResult,omitempty"`
-	// EnableBypassCPUSetAdjustment controls whether GetResourcesAllocation clears
-	// CPU AllocationResult for all QoS classes. Allocation responses returned by
-	// Allocate/AllocateForPod keep their cpuset unchanged.
+	// EnableBypassCPUSetAdjustment bypasses cpuset backfill in QRM CPU plugin
+	// responses for shared_cores, reclaimed_cores and system_cores pods.
+	// When enabled, Allocate/AllocateForPod and GetResourcesAllocation do not
+	// populate cpuset for those QoS classes. Dedicated pools are unaffected.
 	// +optional
 	EnableBypassCPUSetAdjustment *bool `json:"enableBypassCPUSetAdjustment,omitempty"`
 	// BulkheadConfig is the dynamic config for core bulkhead plugins.
