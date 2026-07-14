@@ -824,6 +824,11 @@ spec:
                                   EnableBulkheadCpusetTopology controls whether the core bulkhead cpuset
                                   topology plugin is enabled when Enable is true.
                                 type: boolean
+                              enableBulkheadSystemService:
+                                description: |-
+                                  EnableBulkheadSystemService controls whether the core bulkhead
+                                  system_service plugin is enabled when Enable is true.
+                                type: boolean
                               enableBulkheadWorkqueue:
                                 description: |-
                                   EnableBulkheadWorkqueue controls whether the core bulkhead workqueue

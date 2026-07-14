@@ -28,4 +28,8 @@ type BulkheadConfig struct {
 	// plugin is enabled when Enable is true.
 	// +optional
 	EnableBulkheadWorkqueue *bool `json:"enableBulkheadWorkqueue,omitempty"`
+	// EnableBulkheadSystemService controls whether the core bulkhead
+	// system_service plugin is enabled when Enable is true.
+	// +optional
+	EnableBulkheadSystemService *bool `json:"enableBulkheadSystemService,omitempty"`
 }
