@@ -811,6 +811,14 @@ spec:
                       cpuPluginConfig:
                         description: CPUPluginConfig is the config for cpu plugin
                         properties:
+                          bindIRQToReclaimedPool:
+                            description: |-
+                              BindIRQToReclaimedPool, when set to true, requests that the CPU plugin
+                              pin all network IRQs into the reclaimed pool's cpuset (i.e. GetIRQForbiddenCores
+                              will forbid every CPU that is NOT in the reclaimed pool, subject to reservedCPUs
+                              still being included in the forbidden set). If the reclaimed pool is absent
+                              or empty on the node the plugin falls back to the previous behavior.
+                            type: boolean
                           bulkheadConfig:
                             description: BulkheadConfig is the dynamic config for
                               core bulkhead plugins.
@@ -834,6 +842,15 @@ spec:
                                   EnableBulkheadWorkqueue controls whether the core bulkhead workqueue
                                   plugin is enabled when Enable is true.
                                 type: boolean
+                              nonReclaimPoolMinSize:
+                                description: |-
+                                  NonReclaimPoolMinSize is the minimum CPU count kept in the non-reclaim
+                                  pool for bulkhead cpuset topology. When the current non-reclaim pool is
+                                  smaller than this value, CPUs are padded from reclaim effective candidates.
+                                  The padded CPUs never overlap with reserve pool CPUs.
+                                format: int64
+                                minimum: 0
+                                type: integer
                             type: object
                           disableSharedCoresRampUp:
                             description: |-

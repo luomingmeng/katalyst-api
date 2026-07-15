@@ -418,6 +418,11 @@ func (in *BulkheadConfig) DeepCopyInto(out *BulkheadConfig) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.NonReclaimPoolMinSize != nil {
+		in, out := &in.NonReclaimPoolMinSize, &out.NonReclaimPoolMinSize
+		*out = new(int64)
+		**out = **in
+	}
 	return
 }
 

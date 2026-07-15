@@ -32,4 +32,11 @@ type BulkheadConfig struct {
 	// system_service plugin is enabled when Enable is true.
 	// +optional
 	EnableBulkheadSystemService *bool `json:"enableBulkheadSystemService,omitempty"`
+	// NonReclaimPoolMinSize is the minimum CPU count kept in the non-reclaim
+	// pool for bulkhead cpuset topology. When the current non-reclaim pool is
+	// smaller than this value, CPUs are padded from reclaim effective candidates.
+	// The padded CPUs never overlap with reserve pool CPUs.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	NonReclaimPoolMinSize *int64 `json:"nonReclaimPoolMinSize,omitempty"`
 }
