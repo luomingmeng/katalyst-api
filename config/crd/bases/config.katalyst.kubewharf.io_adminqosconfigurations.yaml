@@ -827,6 +827,12 @@ spec:
                                 description: Enable controls whether core bulkhead
                                   is enabled.
                                 type: boolean
+                              enableBulkheadCpusetMems:
+                                description: |-
+                                  EnableBulkheadCpusetMems controls whether the core bulkhead cpuset_mems
+                                  plugin is enabled when Enable is true. The plugin writes cpuset.mems for
+                                  reclaim NUMA buckets independently from cpuset topology.
+                                type: boolean
                               enableBulkheadCpusetTopology:
                                 description: |-
                                   EnableBulkheadCpusetTopology controls whether the core bulkhead cpuset

@@ -24,6 +24,11 @@ type BulkheadConfig struct {
 	// topology plugin is enabled when Enable is true.
 	// +optional
 	EnableBulkheadCpusetTopology *bool `json:"enableBulkheadCpusetTopology,omitempty"`
+	// EnableBulkheadCpusetMems controls whether the core bulkhead cpuset_mems
+	// plugin is enabled when Enable is true. The plugin writes cpuset.mems for
+	// reclaim NUMA buckets independently from cpuset topology.
+	// +optional
+	EnableBulkheadCpusetMems *bool `json:"enableBulkheadCpusetMems,omitempty"`
 	// EnableBulkheadWorkqueue controls whether the core bulkhead workqueue
 	// plugin is enabled when Enable is true.
 	// +optional

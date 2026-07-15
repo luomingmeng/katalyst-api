@@ -408,6 +408,11 @@ func (in *BulkheadConfig) DeepCopyInto(out *BulkheadConfig) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.EnableBulkheadCpusetMems != nil {
+		in, out := &in.EnableBulkheadCpusetMems, &out.EnableBulkheadCpusetMems
+		*out = new(bool)
+		**out = **in
+	}
 	if in.EnableBulkheadWorkqueue != nil {
 		in, out := &in.EnableBulkheadWorkqueue, &out.EnableBulkheadWorkqueue
 		*out = new(bool)
