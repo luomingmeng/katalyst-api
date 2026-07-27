@@ -449,6 +449,11 @@ func (in *CPUAdvisorConfig) DeepCopyInto(out *CPUAdvisorConfig) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DisableDedicatedCoresOverlapReclaimedCores != nil {
+		in, out := &in.DisableDedicatedCoresOverlapReclaimedCores, &out.DisableDedicatedCoresOverlapReclaimedCores
+		*out = new(bool)
+		**out = **in
+	}
 	if in.CPUProvisionConfig != nil {
 		in, out := &in.CPUProvisionConfig, &out.CPUProvisionConfig
 		*out = new(CPUProvisionConfig)

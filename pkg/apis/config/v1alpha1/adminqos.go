@@ -185,6 +185,11 @@ type CPUAdvisorConfig struct {
 	// +optional
 	AllowSharedCoresOverlapReclaimedCores *bool `json:"allowSharedCoresOverlapReclaimedCores,omitempty"`
 
+	// DisableDedicatedCoresOverlapReclaimedCores is a flag, when enabled,
+	// dedicated_cores pods must use a cpuset that does not overlap reclaimed_cores pods.
+	// +optional
+	DisableDedicatedCoresOverlapReclaimedCores *bool `json:"disableDedicatedCoresOverlapReclaimedCores,omitempty"`
+
 	// optional
 	CPUProvisionConfig *CPUProvisionConfig `json:"cpuProvisionConfig"`
 }

@@ -94,6 +94,11 @@ spec:
                               AllowSharedCoresOverlapReclaimedCores is a flag, when enabled,
                               we will rely on kernel features to ensure that shared_cores pods can suppress and preempt reclaimed_cores pods.
                             type: boolean
+                          disableDedicatedCoresOverlapReclaimedCores:
+                            description: |-
+                              DisableDedicatedCoresOverlapReclaimedCores is a flag, when enabled,
+                              dedicated_cores pods must use a cpuset that does not overlap reclaimed_cores pods.
+                            type: boolean
                           cpuProvisionConfig:
                             description: optional
                             properties:
