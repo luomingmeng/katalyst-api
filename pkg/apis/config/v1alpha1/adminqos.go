@@ -147,6 +147,13 @@ type ReclaimedResourceConfig struct {
 	// +optional
 	NumaMinReclaimedResourceForAllocate *v1.ResourceList `json:"numaMinReclaimedResourceForAllocate,omitempty"`
 
+	// ReclaimedConsumerToReclaimedResourcePercentage maps a reclaim consumer name to the percentage
+	// of reclaimed resources assigned to that consumer. Values are percentages in [0, 100].
+	// +kubebuilder:validation:MinProperties=1
+	// +kubebuilder:validation:XValidation:rule="self.all(k, self[k] >= 0 && self[k] <= 100)",message="all reclaimed consumer percentages must be in [0, 100]"
+	// +optional
+	ReclaimedConsumerToReclaimedResourcePercentage *map[string]int `json:"reclaimedConsumerToReclaimedResourcePercentage,omitempty"`
+
 	// CPUHeadroomConfig is a configuration for cpu headroom
 	// +optional
 	CPUHeadroomConfig *CPUHeadroomConfig `json:"cpuHeadroomConfig,omitempty"`

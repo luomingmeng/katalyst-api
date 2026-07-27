@@ -1113,6 +1113,18 @@ spec:
                           by shared_cores pods.
                           For example, {"cpu": 0.1, "memory": 0.2}.
                         type: object
+                      reclaimedConsumerToReclaimedResourcePercentage:
+                        additionalProperties:
+                          type: integer
+                        description: |-
+                          ReclaimedConsumerToReclaimedResourcePercentage maps a reclaim consumer name to the percentage
+                          of reclaimed resources assigned to that consumer. Values are percentages in [0, 100].
+                        minProperties: 1
+                        type: object
+                        x-kubernetes-validations:
+                        - message: all reclaimed consumer percentages must be in [0,
+                            100]
+                          rule: self.all(k, self[k] >= 0 && self[k] <= 100)
                       reservedResourceForAllocate:
                         additionalProperties:
                           anyOf:

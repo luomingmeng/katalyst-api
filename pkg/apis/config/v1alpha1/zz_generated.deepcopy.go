@@ -2647,6 +2647,17 @@ func (in *ReclaimedResourceConfig) DeepCopyInto(out *ReclaimedResourceConfig) {
 			}
 		}
 	}
+	if in.ReclaimedConsumerToReclaimedResourcePercentage != nil {
+		in, out := &in.ReclaimedConsumerToReclaimedResourcePercentage, &out.ReclaimedConsumerToReclaimedResourcePercentage
+		*out = new(map[string]int)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make(map[string]int, len(*in))
+			for key, val := range *in {
+				(*out)[key] = val
+			}
+		}
+	}
 	if in.CPUHeadroomConfig != nil {
 		in, out := &in.CPUHeadroomConfig, &out.CPUHeadroomConfig
 		*out = new(CPUHeadroomConfig)
