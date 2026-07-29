@@ -44,4 +44,25 @@ type BulkheadConfig struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	NonReclaimPoolMinSize *int64 `json:"nonReclaimPoolMinSize,omitempty"`
+	// BulkheadRDTConfig is the dynamic config for RDT bulkhead plugins.
+	// +optional
+	BulkheadRDTConfig *BulkheadRDTConfig `json:"bulkheadRDTConfig,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="!has(self.enableCAT) || !self.enableCAT || has(self.defaultCATWays)",message="defaultCATWays must be specified when enableCAT is true"
+type BulkheadRDTConfig struct {
+	// EnableCPUList controls whether the RDT CPU list bulkhead plugin is enabled.
+	// +optional
+	EnableCPUList *bool `json:"enableCPUList,omitempty"`
+	// EnableCAT controls whether the RDT CAT bulkhead plugin is enabled.
+	// +optional
+	EnableCAT *bool `json:"enableCAT,omitempty"`
+	// DefaultCATWays is the default CAT way count for non-root CLOS.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	DefaultCATWays *int64 `json:"defaultCATWays,omitempty"`
+	// ClosCATWays maps pool names or CLOS IDs to CAT way counts.
+	// +kubebuilder:validation:XValidation:rule="self.all(k, self[k] > 0)",message="all CLOS CAT ways must be greater than 0"
+	// +optional
+	ClosCATWays map[string]int64 `json:"closCATWays,omitempty"`
 }

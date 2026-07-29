@@ -830,6 +830,41 @@ spec:
                             description: BulkheadConfig is the dynamic config for
                               core bulkhead plugins.
                             properties:
+                              bulkheadRDTConfig:
+                                description: BulkheadRDTConfig is the dynamic config
+                                  for RDT bulkhead plugins.
+                                properties:
+                                  closCATWays:
+                                    additionalProperties:
+                                      format: int64
+                                      type: integer
+                                    description: ClosCATWays maps pool names or CLOS
+                                      IDs to CAT way counts.
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: all CLOS CAT ways must be greater than
+                                        0
+                                      rule: self.all(k, self[k] > 0)
+                                  defaultCATWays:
+                                    description: DefaultCATWays is the default CAT
+                                      way count for non-root CLOS.
+                                    format: int64
+                                    minimum: 1
+                                    type: integer
+                                  enableCAT:
+                                    description: EnableCAT controls whether the RDT
+                                      CAT bulkhead plugin is enabled.
+                                    type: boolean
+                                  enableCPUList:
+                                    description: EnableCPUList controls whether the
+                                      RDT CPU list bulkhead plugin is enabled.
+                                    type: boolean
+                                type: object
+                                x-kubernetes-validations:
+                                - message: defaultCATWays must be specified when enableCAT
+                                    is true
+                                  rule: '!has(self.enableCAT) || !self.enableCAT ||
+                                    has(self.defaultCATWays)'
                               enable:
                                 description: Enable controls whether core bulkhead
                                   is enabled.
@@ -908,6 +943,15 @@ spec:
                             maximum: 1
                             minimum: 0
                             type: number
+                        type: object
+                      rdtConfig:
+                        description: RDTConfig is the dynamic config for RDT lifecycle
+                          management.
+                        properties:
+                          disableRDT:
+                            description: DisableRDT force removes managed resctrl
+                              CLOS directories.
+                            type: boolean
                         type: object
                     type: object
                   reclaimedResourceConfig:

@@ -396,6 +396,15 @@ type QRMPluginConfig struct {
 	// CPUPluginConfig is the config for cpu plugin
 	// +optional
 	CPUPluginConfig *CPUPluginConfig `json:"cpuPluginConfig,omitempty"`
+	// RDTConfig is the dynamic config for RDT lifecycle management.
+	// +optional
+	RDTConfig *RDTConfig `json:"rdtConfig,omitempty"`
+}
+
+type RDTConfig struct {
+	// DisableRDT force removes managed resctrl CLOS directories.
+	// +optional
+	DisableRDT *bool `json:"disableRDT,omitempty"`
 }
 
 type CPUPluginConfig struct {
