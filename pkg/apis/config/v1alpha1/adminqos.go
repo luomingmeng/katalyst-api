@@ -422,6 +422,18 @@ type CPUPluginConfig struct {
 	// from their target pool directly instead of entering RampUp.
 	// +optional
 	DisableSharedCoresRampUp *bool `json:"disableSharedCoresRampUp,omitempty"`
+	// EnableRampUpReclaimHardPartition enables hard reclaim partitioning while a
+	// workload is in ramp-up. When disabled or unset, legacy ramp-up behavior is kept.
+	// +optional
+	EnableRampUpReclaimHardPartition *bool `json:"enableRampUpReclaimHardPartition,omitempty"`
+	// InitialRampUpReclaimCPUSetRatio controls the optional dynamic ratio target
+	// used after hard partitioning is enabled. nil keeps the startup flag/default
+	// ratio; 0 uses reserve floors only; (0,1] uses the larger of reserve floor
+	// and ratio target.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=1
+	// +optional
+	InitialRampUpReclaimCPUSetRatio *float64 `json:"initialRampUpReclaimCPUSetRatio,omitempty"`
 	// SystemExclusivePool is the config for system exclusive pool, key is pool name, value is the number of cores to allocate
 	// +optional
 	SystemExclusivePool map[string]int `json:"systemExclusivePool,omitempty"`

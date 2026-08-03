@@ -598,6 +598,16 @@ func (in *CPUPluginConfig) DeepCopyInto(out *CPUPluginConfig) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.EnableRampUpReclaimHardPartition != nil {
+		in, out := &in.EnableRampUpReclaimHardPartition, &out.EnableRampUpReclaimHardPartition
+		*out = new(bool)
+		**out = **in
+	}
+	if in.InitialRampUpReclaimCPUSetRatio != nil {
+		in, out := &in.InitialRampUpReclaimCPUSetRatio, &out.InitialRampUpReclaimCPUSetRatio
+		*out = new(float64)
+		**out = **in
+	}
 	if in.SystemExclusivePool != nil {
 		in, out := &in.SystemExclusivePool, &out.SystemExclusivePool
 		*out = make(map[string]int, len(*in))
