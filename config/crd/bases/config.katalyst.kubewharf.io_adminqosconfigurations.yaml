@@ -156,6 +156,11 @@ spec:
                                   type: object
                                 type: array
                             type: object
+                          disableDedicatedCoresOverlapReclaimedCores:
+                            description: |-
+                              DisableDedicatedCoresOverlapReclaimedCores is a flag, when enabled,
+                              dedicated_cores pods must use a cpuset that does not overlap reclaimed_cores pods.
+                            type: boolean
                         required:
                         - cpuProvisionConfig
                         type: object
@@ -913,6 +918,20 @@ spec:
                               When enabled, Allocate/AllocateForPod and GetResourcesAllocation do not
                               populate cpuset for those QoS classes. Dedicated pools are unaffected.
                             type: boolean
+                          enableRampUpReclaimHardPartition:
+                            description: |-
+                              EnableRampUpReclaimHardPartition enables hard reclaim partitioning while a
+                              workload is in ramp-up. When disabled or unset, legacy ramp-up behavior is kept.
+                            type: boolean
+                          initialRampUpReclaimCPUSetRatio:
+                            description: |-
+                              InitialRampUpReclaimCPUSetRatio controls the optional dynamic ratio target
+                              used after hard partitioning is enabled. nil keeps the startup flag/default
+                              ratio; 0 uses reserve floors only; (0,1] uses the larger of reserve floor
+                              and ratio target.
+                            maximum: 1
+                            minimum: 0
+                            type: number
                           preferUseExistNUMAHintResult:
                             description: |-
                               PreferUseExistNUMAHintResult prefer to use existing numa hint results

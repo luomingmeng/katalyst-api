@@ -492,6 +492,11 @@ func (in *CPUAdvisorConfig) DeepCopyInto(out *CPUAdvisorConfig) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DisableDedicatedCoresOverlapReclaimedCores != nil {
+		in, out := &in.DisableDedicatedCoresOverlapReclaimedCores, &out.DisableDedicatedCoresOverlapReclaimedCores
+		*out = new(bool)
+		**out = **in
+	}
 	if in.CPUProvisionConfig != nil {
 		in, out := &in.CPUProvisionConfig, &out.CPUProvisionConfig
 		*out = new(CPUProvisionConfig)
@@ -634,6 +639,16 @@ func (in *CPUPluginConfig) DeepCopyInto(out *CPUPluginConfig) {
 	if in.DisableSharedCoresRampUp != nil {
 		in, out := &in.DisableSharedCoresRampUp, &out.DisableSharedCoresRampUp
 		*out = new(bool)
+		**out = **in
+	}
+	if in.EnableRampUpReclaimHardPartition != nil {
+		in, out := &in.EnableRampUpReclaimHardPartition, &out.EnableRampUpReclaimHardPartition
+		*out = new(bool)
+		**out = **in
+	}
+	if in.InitialRampUpReclaimCPUSetRatio != nil {
+		in, out := &in.InitialRampUpReclaimCPUSetRatio, &out.InitialRampUpReclaimCPUSetRatio
+		*out = new(float64)
 		**out = **in
 	}
 	if in.SystemExclusivePool != nil {
