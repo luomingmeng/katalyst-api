@@ -19,6 +19,8 @@ package v1alpha1
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
@@ -67,4 +69,21 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 	if bulkheadRDTConfig.ClosCATWays["reclaim"] != 2 {
 		t.Fatalf("ClosCATWays[reclaim] = %d, want 2", bulkheadRDTConfig.ClosCATWays["reclaim"])
 	}
+}
+
+func TestCPUProvisionConfigFillDefaultSharePoolRoundTrip(t *testing.T) {
+	enabled := true
+	in := &CPUProvisionConfig{
+		FillDefaultSharePoolWithNonReclaimCPUs: &enabled,
+	}
+	data, err := json.Marshal(in)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"fillDefaultSharePoolWithNonReclaimCPUs":true}`, string(data))
+	out := &CPUProvisionConfig{}
+	require.NoError(t, json.Unmarshal(data, out))
+	require.NotNil(t, out.FillDefaultSharePoolWithNonReclaimCPUs)
+	require.True(t, *out.FillDefaultSharePoolWithNonReclaimCPUs)
+	copied := in.DeepCopy()
+	require.NotSame(t, in.FillDefaultSharePoolWithNonReclaimCPUs, copied.FillDefaultSharePoolWithNonReclaimCPUs)
+	require.True(t, *copied.FillDefaultSharePoolWithNonReclaimCPUs)
 }
