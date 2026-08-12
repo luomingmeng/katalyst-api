@@ -18,9 +18,11 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/yaml"
 )
 
 func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
@@ -86,4 +88,81 @@ func TestCPUProvisionConfigFillDefaultSharePoolRoundTrip(t *testing.T) {
 	copied := in.DeepCopy()
 	require.NotSame(t, in.FillDefaultSharePoolWithNonReclaimCPUs, copied.FillDefaultSharePoolWithNonReclaimCPUs)
 	require.True(t, *copied.FillDefaultSharePoolWithNonReclaimCPUs)
+}
+
+func TestMemoryGuardConfigCriticalWatermarkSource(t *testing.T) {
+	t.Run("JSON round trip and optional omission", func(t *testing.T) {
+		source := CriticalWatermarkSourceHigh
+		in := &MemoryGuardConfig{CriticalWatermarkSource: &source}
+
+		data, err := json.Marshal(in)
+		require.NoError(t, err)
+		require.JSONEq(t, `{"criticalWatermarkSource":"high"}`, string(data))
+
+		out := &MemoryGuardConfig{}
+		require.NoError(t, json.Unmarshal(data, out))
+		require.NotNil(t, out.CriticalWatermarkSource)
+		require.Equal(t, CriticalWatermarkSourceHigh, *out.CriticalWatermarkSource)
+
+		data, err = json.Marshal(&MemoryGuardConfig{})
+		require.NoError(t, err)
+		require.JSONEq(t, `{}`, string(data))
+	})
+
+	t.Run("deep copy owns an independent pointer", func(t *testing.T) {
+		source := CriticalWatermarkSourceLow
+		in := &MemoryGuardConfig{CriticalWatermarkSource: &source}
+
+		copied := in.DeepCopy()
+		require.NotNil(t, copied.CriticalWatermarkSource)
+		require.NotSame(t, in.CriticalWatermarkSource, copied.CriticalWatermarkSource)
+		require.Equal(t, CriticalWatermarkSourceLow, *copied.CriticalWatermarkSource)
+
+		*copied.CriticalWatermarkSource = CriticalWatermarkSourceHigh
+		require.Equal(t, CriticalWatermarkSourceLow, *in.CriticalWatermarkSource)
+	})
+
+	t.Run("CRD schema exposes the low and high enum", func(t *testing.T) {
+		data, err := os.ReadFile("../../../../config/crd/bases/config.katalyst.kubewharf.io_adminqosconfigurations.yaml")
+		require.NoError(t, err)
+
+		jsonData, err := yaml.YAMLToJSON(data)
+		require.NoError(t, err)
+
+		var crd struct {
+			Spec struct {
+				Versions []struct {
+					Schema struct {
+						OpenAPIV3Schema adminQoSSchema `json:"openAPIV3Schema"`
+					} `json:"schema"`
+				} `json:"versions"`
+			} `json:"spec"`
+		}
+		require.NoError(t, json.Unmarshal(jsonData, &crd))
+		require.NotEmpty(t, crd.Spec.Versions)
+
+		schema := crd.Spec.Versions[0].Schema.OpenAPIV3Schema
+		schema = adminQoSSchemaProperty(t, schema, "spec")
+		schema = adminQoSSchemaProperty(t, schema, "config")
+		schema = adminQoSSchemaProperty(t, schema, "advisorConfig")
+		schema = adminQoSSchemaProperty(t, schema, "memoryAdvisorConfig")
+		schema = adminQoSSchemaProperty(t, schema, "memoryGuardConfig")
+		criticalWatermarkSource := adminQoSSchemaProperty(t, schema, "criticalWatermarkSource")
+
+		require.Equal(t, "string", criticalWatermarkSource.Type)
+		require.Equal(t, []string{"low", "high"}, criticalWatermarkSource.Enum)
+	})
+}
+
+type adminQoSSchema struct {
+	Properties map[string]adminQoSSchema `json:"properties"`
+	Type       string                    `json:"type"`
+	Enum       []string                  `json:"enum"`
+}
+
+func adminQoSSchemaProperty(t *testing.T, schema adminQoSSchema, name string) adminQoSSchema {
+	t.Helper()
+	property, ok := schema.Properties[name]
+	require.Truef(t, ok, "schema property %q not found", name)
+	return property
 }
