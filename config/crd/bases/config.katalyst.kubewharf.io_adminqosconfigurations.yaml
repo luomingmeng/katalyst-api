@@ -179,6 +179,13 @@ spec:
                               criticalWatermarkScaleFactor:
                                 minimum: 0
                                 type: number
+                              criticalWatermarkSource:
+                                description: CriticalWatermarkSource selects the watermark
+                                  used to calculate the critical threshold.
+                                enum:
+                                - low
+                                - high
+                                type: string
                               enable:
                                 description: Enable is a flag to enable memory guard
                                   plugin

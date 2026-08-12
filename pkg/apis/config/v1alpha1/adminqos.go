@@ -289,6 +289,13 @@ type MemoryAdvisorConfig struct {
 	MemoryGuardConfig *MemoryGuardConfig `json:"memoryGuardConfig,omitempty"`
 }
 
+type CriticalWatermarkSource string
+
+const (
+	CriticalWatermarkSourceLow  CriticalWatermarkSource = "low"
+	CriticalWatermarkSourceHigh CriticalWatermarkSource = "high"
+)
+
 type MemoryGuardConfig struct {
 	// Enable is a flag to enable memory guard plugin
 	// +optional
@@ -297,6 +304,11 @@ type MemoryGuardConfig struct {
 	// +kubebuilder:validation:Minimum=0
 	// +optional
 	CriticalWatermarkScaleFactor *float64 `json:"criticalWatermarkScaleFactor,omitempty"`
+
+	// CriticalWatermarkSource selects the watermark used to calculate the critical threshold.
+	// +kubebuilder:validation:Enum=low;high
+	// +optional
+	CriticalWatermarkSource *CriticalWatermarkSource `json:"criticalWatermarkSource,omitempty"`
 }
 
 type MemoryHeadroomUtilBasedConfig struct {

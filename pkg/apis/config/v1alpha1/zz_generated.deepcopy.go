@@ -2055,6 +2055,11 @@ func (in *MemoryGuardConfig) DeepCopyInto(out *MemoryGuardConfig) {
 		*out = new(float64)
 		**out = **in
 	}
+	if in.CriticalWatermarkSource != nil {
+		in, out := &in.CriticalWatermarkSource, &out.CriticalWatermarkSource
+		*out = new(CriticalWatermarkSource)
+		**out = **in
+	}
 	return
 }
 
