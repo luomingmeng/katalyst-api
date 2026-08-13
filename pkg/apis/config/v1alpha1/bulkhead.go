@@ -60,15 +60,15 @@ type BulkheadRDTConfig struct {
 	// +optional
 	EnableCAT *bool `json:"enableCAT,omitempty"`
 	// DefaultCATWays is the default CAT way count or expression for non-root CLOS.
-	// Supported expression variables are CBMMask and MinCBMBits.
+	// Supported expression variables are MaxCATWays and MinCATWays.
 	// +optional
 	// +kubebuilder:validation:XIntOrString
-	// +kubebuilder:validation:XValidation:rule="type(self) == int ? self > 0 : self.matches('^\\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\\s*[+-]\\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\\s*$')",message="defaultCATWays must be a positive integer or a valid CAT ways expression"
-	// +kubebuilder:validation:XValidation:rule="type(self) == int || !self.matches('^\\s*(CBMMask\\s*-\\s*CBMMask|MinCBMBits\\s*-\\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\\s*[+-]\\s*[1-9][0-9]*)\\s*$')",message="defaultCATWays expression is statically non-positive or contains unsimplified literal arithmetic"
+	// +kubebuilder:validation:XValidation:rule="type(self) == int ? self > 0 : self.matches('^\\s*(MaxCATWays|MinCATWays|[1-9][0-9]*)(\\s*[+-]\\s*(MaxCATWays|MinCATWays|[1-9][0-9]*))?\\s*$')",message="defaultCATWays must be a positive integer or a valid CAT ways expression"
+	// +kubebuilder:validation:XValidation:rule="type(self) == int || !self.matches('^\\s*(MaxCATWays\\s*-\\s*MaxCATWays|MinCATWays\\s*-\\s*(MinCATWays|MaxCATWays)|[1-9][0-9]*\\s*[+-]\\s*[1-9][0-9]*)\\s*$')",message="defaultCATWays expression is statically non-positive or contains unsimplified literal arithmetic"
 	DefaultCATWays *intstr.IntOrString `json:"defaultCATWays,omitempty"`
 	// ClosCATWays maps pool names or CLOS IDs to CAT way counts or expressions.
-	// +kubebuilder:validation:XValidation:rule="self.all(k, type(self[k]) == int ? self[k] > 0 : self[k].matches('^\\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\\s*[+-]\\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\\s*$'))",message="all CLOS CAT ways must be positive integers or valid CAT ways expressions"
-	// +kubebuilder:validation:XValidation:rule="self.all(k, type(self[k]) == int || !self[k].matches('^\\s*(CBMMask\\s*-\\s*CBMMask|MinCBMBits\\s*-\\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\\s*[+-]\\s*[1-9][0-9]*)\\s*$'))",message="CLOS CAT ways expressions must not be statically non-positive or contain unsimplified literal arithmetic"
+	// +kubebuilder:validation:XValidation:rule="self.all(k, type(self[k]) == int ? self[k] > 0 : self[k].matches('^\\s*(MaxCATWays|MinCATWays|[1-9][0-9]*)(\\s*[+-]\\s*(MaxCATWays|MinCATWays|[1-9][0-9]*))?\\s*$'))",message="all CLOS CAT ways must be positive integers or valid CAT ways expressions"
+	// +kubebuilder:validation:XValidation:rule="self.all(k, type(self[k]) == int || !self[k].matches('^\\s*(MaxCATWays\\s*-\\s*MaxCATWays|MinCATWays\\s*-\\s*(MinCATWays|MaxCATWays)|[1-9][0-9]*\\s*[+-]\\s*[1-9][0-9]*)\\s*$'))",message="CLOS CAT ways expressions must not be statically non-positive or contain unsimplified literal arithmetic"
 	// +kubebuilder:validation:XValidation:rule="self.all(k, k.matches('^\\S+$'))",message="CLOS CAT ways keys must not be empty or contain whitespace"
 	// +optional
 	ClosCATWays map[string]intstr.IntOrString `json:"closCATWays,omitempty"`
@@ -81,8 +81,8 @@ type BulkheadRDTConfig struct {
 type CATWaysExpressionVariable string
 
 const (
-	CATWaysExpressionVariableCBMMask    CATWaysExpressionVariable = "CBMMask"
-	CATWaysExpressionVariableMinCBMBits CATWaysExpressionVariable = "MinCBMBits"
+	CATWaysExpressionVariableMaxCATWays CATWaysExpressionVariable = "MaxCATWays"
+	CATWaysExpressionVariableMinCATWays CATWaysExpressionVariable = "MinCATWays"
 )
 
 // CATPolicy controls CAT bit placement and deterministic allocation groups.
@@ -105,7 +105,7 @@ type CATPolicy struct {
 // CATPlacementPolicy controls where CAT masks are selected for one CLOS.
 type CATPlacementPolicy struct {
 	// AllowedBitUsages restricts candidate CAT bits by resctrl bit_usage class.
-	// Empty means all bits from CBMMask are available.
+	// Empty means all ways supported by the domain are available.
 	// +optional
 	AllowedBitUsages []CATBitUsage `json:"allowedBitUsages,omitempty"`
 	// Direction controls deterministic contiguous mask selection.

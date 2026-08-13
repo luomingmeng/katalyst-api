@@ -851,42 +851,21 @@ spec:
                                 description: BulkheadRDTConfig is the dynamic config
                                   for RDT bulkhead plugins.
                                 properties:
-                                  closCATWays:
-                                    additionalProperties:
-                                      anyOf:
-                                      - type: integer
-                                      - type: string
-                                      x-kubernetes-int-or-string: true
-                                    description: ClosCATWays maps pool names or CLOS
-                                      IDs to CAT way counts or expressions.
-                                    type: object
-                                    x-kubernetes-validations:
-                                    - message: all CLOS CAT ways must be positive
-                                        integers or valid CAT ways expressions
-                                      rule: >-
-                                        self.all(k, type(self[k]) == int ? self[k] > 0 : self[k].matches('^\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\s*[+-]\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\s*$'))
-                                    - message: CLOS CAT ways expressions must not be
-                                        statically non-positive or contain unsimplified
-                                        literal arithmetic
-                                      rule: >-
-                                        self.all(k, type(self[k]) == int || !self[k].matches('^\s*(CBMMask\s*-\s*CBMMask|MinCBMBits\s*-\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\s*[+-]\s*[1-9][0-9]*)\s*$'))
-                                    - message: CLOS CAT ways keys must not be empty
-                                        or contain whitespace
-                                      rule: self.all(k, k.matches('^\S+$'))
                                   catPolicy:
                                     description: CATPolicy controls CAT bit placement
                                       and deterministic allocation groups.
                                     properties:
                                       allocationGroups:
-                                        description: AllocationGroups pack ordered CLOS
-                                          IDs into non-overlapping CAT masks.
+                                        description: AllocationGroups pack ordered
+                                          CLOS IDs into non-overlapping CAT masks.
                                         items:
                                           description: CATAllocationGroup packs ordered
                                             CLOS IDs into non-overlapping CAT masks.
                                           properties:
                                             allowedBitUsages:
                                               description: |-
-                                                AllowedBitUsages is the default bit_usage constraint for CLOS IDs in this group. catPolicy.closPlacements may override it for individual group members.
+                                                AllowedBitUsages is the default bit_usage constraint for CLOS IDs in this
+                                                group. catPolicy.closPlacements may override it for individual group members.
                                               items:
                                                 description: CATBitUsage is one resctrl
                                                   info/L3/bit_usage class.
@@ -897,8 +876,9 @@ spec:
                                                 type: string
                                               type: array
                                             closIDs:
-                                              description: ClosIDs is the ordered list
-                                                of pool names or CLOS IDs to pack.
+                                              description: ClosIDs is the ordered
+                                                list of pool names or CLOS IDs to
+                                                pack.
                                               items:
                                                 type: string
                                               minItems: 1
@@ -928,13 +908,13 @@ spec:
                                         type: array
                                       closPlacements:
                                         additionalProperties:
-                                          description: CATPlacementPolicy controls where
-                                            CAT masks are selected for one CLOS.
+                                          description: CATPlacementPolicy controls
+                                            where CAT masks are selected for one CLOS.
                                           properties:
                                             allowedBitUsages:
                                               description: |-
                                                 AllowedBitUsages restricts candidate CAT bits by resctrl bit_usage class.
-                                                Empty means all bits from CBMMask are available.
+                                                Empty means all ways supported by the domain are available.
                                               items:
                                                 description: CATBitUsage is one resctrl
                                                   info/L3/bit_usage class.
@@ -955,20 +935,22 @@ spec:
                                           type: object
                                         description: |-
                                           ClosPlacements maps pool names or CLOS IDs to per-CLOS placement policy.
-                                          It also applies to CLOS IDs that appear in allocationGroups and overrides the corresponding group default placement for non-empty fields.
+                                          It also applies to CLOS IDs that appear in allocationGroups and overrides
+                                          the corresponding group default placement for non-empty fields.
                                         type: object
                                         x-kubernetes-validations:
-                                        - message: CLOS placement keys must not be empty
-                                            or contain whitespace
+                                        - message: CLOS placement keys must not be
+                                            empty or contain whitespace
                                           rule: self.all(k, k.matches('^\S+$'))
                                       defaultPlacement:
-                                        description: CATPlacementPolicy controls where
-                                          CAT masks are selected for one CLOS.
+                                        description: |-
+                                          DefaultPlacement is used by CLOS IDs without a CLOS-specific placement
+                                          or allocation group placement.
                                         properties:
                                           allowedBitUsages:
                                             description: |-
                                               AllowedBitUsages restricts candidate CAT bits by resctrl bit_usage class.
-                                              Empty means all bits from CBMMask are available.
+                                              Empty means all ways supported by the domain are available.
                                             items:
                                               description: CATBitUsage is one resctrl
                                                 info/L3/bit_usage class.
@@ -988,24 +970,43 @@ spec:
                                             type: string
                                         type: object
                                     type: object
+                                  closCATWays:
+                                    additionalProperties:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      x-kubernetes-int-or-string: true
+                                    description: ClosCATWays maps pool names or CLOS
+                                      IDs to CAT way counts or expressions.
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: all CLOS CAT ways must be positive
+                                        integers or valid CAT ways expressions
+                                      rule: 'self.all(k, type(self[k]) == int ? self[k]
+                                        > 0 : self[k].matches(''^\s*(MaxCATWays|MinCATWays|[1-9][0-9]*)(\s*[+-]\s*(MaxCATWays|MinCATWays|[1-9][0-9]*))?\s*$''))'
+                                    - message: CLOS CAT ways expressions must not
+                                        be statically non-positive or contain unsimplified
+                                        literal arithmetic
+                                      rule: self.all(k, type(self[k]) == int || !self[k].matches('^\s*(MaxCATWays\s*-\s*MaxCATWays|MinCATWays\s*-\s*(MinCATWays|MaxCATWays)|[1-9][0-9]*\s*[+-]\s*[1-9][0-9]*)\s*$'))
+                                    - message: CLOS CAT ways keys must not be empty
+                                        or contain whitespace
+                                      rule: self.all(k, k.matches('^\S+$'))
                                   defaultCATWays:
-                                    description: DefaultCATWays is the default CAT
-                                      way count or expression for non-root CLOS. Supported
-                                      expression variables are CBMMask and MinCBMBits.
                                     anyOf:
                                     - type: integer
                                     - type: string
+                                    description: |-
+                                      DefaultCATWays is the default CAT way count or expression for non-root CLOS.
+                                      Supported expression variables are MaxCATWays and MinCATWays.
                                     x-kubernetes-int-or-string: true
                                     x-kubernetes-validations:
                                     - message: defaultCATWays must be a positive integer
                                         or a valid CAT ways expression
-                                      rule: >-
-                                        type(self) == int ? self > 0 : self.matches('^\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\s*[+-]\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\s*$')
+                                      rule: 'type(self) == int ? self > 0 : self.matches(''^\s*(MaxCATWays|MinCATWays|[1-9][0-9]*)(\s*[+-]\s*(MaxCATWays|MinCATWays|[1-9][0-9]*))?\s*$'')'
                                     - message: defaultCATWays expression is statically
                                         non-positive or contains unsimplified literal
                                         arithmetic
-                                      rule: >-
-                                        type(self) == int || !self.matches('^\s*(CBMMask\s*-\s*CBMMask|MinCBMBits\s*-\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\s*[+-]\s*[1-9][0-9]*)\s*$')
+                                      rule: type(self) == int || !self.matches('^\s*(MaxCATWays\s*-\s*MaxCATWays|MinCATWays\s*-\s*(MinCATWays|MaxCATWays)|[1-9][0-9]*\s*[+-]\s*[1-9][0-9]*)\s*$')
                                   enableCAT:
                                     description: EnableCAT controls whether the RDT
                                       CAT bulkhead plugin is enabled.

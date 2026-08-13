@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"os"
+	"regexp"
 	"testing"
 
 	"sigs.k8s.io/yaml"
@@ -26,18 +27,21 @@ import (
 
 func TestBulkheadRDTConfigSchema(t *testing.T) {
 	schema := loadBulkheadRDTConfigSchema(t)
+	const catWaysExpressionPattern = `^\s*(MaxCATWays|MinCATWays|[1-9][0-9]*)(\s*[+-]\s*(MaxCATWays|MinCATWays|[1-9][0-9]*))?\s*$`
+	const staticallyInvalidCATWaysExpressionPattern = `^\s*(MaxCATWays\s*-\s*MaxCATWays|MinCATWays\s*-\s*(MinCATWays|MaxCATWays)|[1-9][0-9]*\s*[+-]\s*[1-9][0-9]*)\s*$`
 
 	t.Run("default CAT ways contract", func(t *testing.T) {
 		defaultCATWays := schemaProperty(t, schema, "defaultCATWays")
 		assertIntOrStringSchema(t, defaultCATWays, "defaultCATWays")
 		assertValidationRule(t, defaultCATWays.XKubernetesValidations, validationRule{
-			Rule:    "type(self) == int ? self > 0 : self.matches('^\\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\\s*[+-]\\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\\s*$')",
+			Rule:    "type(self) == int ? self > 0 : self.matches('" + catWaysExpressionPattern + "')",
 			Message: "defaultCATWays must be a positive integer or a valid CAT ways expression",
 		})
 		assertValidationRule(t, defaultCATWays.XKubernetesValidations, validationRule{
-			Rule:    "type(self) == int || !self.matches('^\\s*(CBMMask\\s*-\\s*CBMMask|MinCBMBits\\s*-\\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\\s*[+-]\\s*[1-9][0-9]*)\\s*$')",
+			Rule:    "type(self) == int || !self.matches('" + staticallyInvalidCATWaysExpressionPattern + "')",
 			Message: "defaultCATWays expression is statically non-positive or contains unsimplified literal arithmetic",
 		})
+		assertCATWaysExpressionContract(t, catWaysExpressionPattern)
 	})
 
 	t.Run("EnableCAT conditional contract", func(t *testing.T) {
@@ -61,11 +65,11 @@ func TestBulkheadRDTConfigSchema(t *testing.T) {
 		}
 		assertIntOrStringSchema(t, *closCATWays.AdditionalProperties, "closCATWays values")
 		assertValidationRule(t, closCATWays.XKubernetesValidations, validationRule{
-			Rule:    "self.all(k, type(self[k]) == int ? self[k] > 0 : self[k].matches('^\\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\\s*[+-]\\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\\s*$'))",
+			Rule:    "self.all(k, type(self[k]) == int ? self[k] > 0 : self[k].matches('" + catWaysExpressionPattern + "'))",
 			Message: "all CLOS CAT ways must be positive integers or valid CAT ways expressions",
 		})
 		assertValidationRule(t, closCATWays.XKubernetesValidations, validationRule{
-			Rule:    "self.all(k, type(self[k]) == int || !self[k].matches('^\\s*(CBMMask\\s*-\\s*CBMMask|MinCBMBits\\s*-\\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\\s*[+-]\\s*[1-9][0-9]*)\\s*$'))",
+			Rule:    "self.all(k, type(self[k]) == int || !self[k].matches('" + staticallyInvalidCATWaysExpressionPattern + "'))",
 			Message: "CLOS CAT ways expressions must not be statically non-positive or contain unsimplified literal arithmetic",
 		})
 		assertValidationRule(t, closCATWays.XKubernetesValidations, validationRule{
@@ -257,6 +261,32 @@ func assertRequiredSchema(t *testing.T, schema jsonSchema, field string, name st
 		}
 	}
 	t.Fatalf("%s required = %#v, want %s", name, schema.Required, field)
+}
+
+func assertCATWaysExpressionContract(t *testing.T, pattern string) {
+	t.Helper()
+	expression := regexp.MustCompile(pattern)
+	for _, value := range []string{
+		"MaxCATWays",
+		"MinCATWays",
+		"MaxCATWays-MinCATWays",
+		"MinCATWays+1",
+		"2",
+	} {
+		if !expression.MatchString(value) {
+			t.Errorf("CAT ways expression pattern rejected %q", value)
+		}
+	}
+	for _, value := range []string{
+		"CBMMask",
+		"MinCBMBits",
+		"CBMMask-MinCBMBits",
+		"MaxCATWays-CBMMask",
+	} {
+		if expression.MatchString(value) {
+			t.Errorf("CAT ways expression pattern accepted legacy expression %q", value)
+		}
+	}
 }
 
 func assertEnableCATContract(t *testing.T, cases []enableCATContractCase) {

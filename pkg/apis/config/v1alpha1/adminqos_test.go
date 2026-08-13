@@ -30,7 +30,7 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 	disableRDT := true
 	enableCPUList := true
 	enableCAT := true
-	defaultCATWays := intstr.FromString("CBMMask")
+	defaultCATWays := intstr.FromString("MaxCATWays")
 	config := QRMPluginConfig{
 		RDTConfig: &RDTConfig{
 			DisableRDT: &disableRDT,
@@ -42,7 +42,7 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 					EnableCAT:      &enableCAT,
 					DefaultCATWays: &defaultCATWays,
 					ClosCATWays: map[string]intstr.IntOrString{
-						"share-00": intstr.FromString("CBMMask-MinCBMBits"),
+						"share-00": intstr.FromString("MaxCATWays-MinCATWays"),
 						"share-01": intstr.FromInt(2),
 					},
 					CATPolicy: &CATPolicy{
@@ -87,12 +87,12 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 	if bulkheadRDTConfig.EnableCAT == nil || !*bulkheadRDTConfig.EnableCAT {
 		t.Fatal("EnableCAT was not preserved")
 	}
-	if bulkheadRDTConfig.DefaultCATWays == nil || bulkheadRDTConfig.DefaultCATWays.String() != "CBMMask" {
-		t.Fatalf("DefaultCATWays = %v, want CBMMask", bulkheadRDTConfig.DefaultCATWays)
+	if bulkheadRDTConfig.DefaultCATWays == nil || bulkheadRDTConfig.DefaultCATWays.String() != "MaxCATWays" {
+		t.Fatalf("DefaultCATWays = %v, want MaxCATWays", bulkheadRDTConfig.DefaultCATWays)
 	}
 	share00CATWays := bulkheadRDTConfig.ClosCATWays["share-00"]
-	if got := share00CATWays.String(); got != "CBMMask-MinCBMBits" {
-		t.Fatalf("ClosCATWays[share-00] = %s, want CBMMask-MinCBMBits", got)
+	if got := share00CATWays.String(); got != "MaxCATWays-MinCATWays" {
+		t.Fatalf("ClosCATWays[share-00] = %s, want MaxCATWays-MinCATWays", got)
 	}
 	share01CATWays := bulkheadRDTConfig.ClosCATWays["share-01"]
 	if got := share01CATWays.IntValue(); got != 2 {
