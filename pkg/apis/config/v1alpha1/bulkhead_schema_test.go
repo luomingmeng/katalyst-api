@@ -28,14 +28,15 @@ func TestBulkheadRDTConfigSchema(t *testing.T) {
 	schema := loadBulkheadRDTConfigSchema(t)
 
 	t.Run("default CAT ways contract", func(t *testing.T) {
-		minimum := schemaProperty(t, schema, "defaultCATWays").Minimum
-		if minimum == nil || *minimum != 1 {
-			t.Fatalf("defaultCATWays minimum = %v, want 1", minimum)
-		}
-
-		assertMinimumContract(t, *minimum, []minimumContractCase{
-			{name: "invalid: zero default CAT ways", value: 0, valid: false},
-			{name: "valid: positive default ways without explicit enablement", value: 1, valid: true},
+		defaultCATWays := schemaProperty(t, schema, "defaultCATWays")
+		assertIntOrStringSchema(t, defaultCATWays, "defaultCATWays")
+		assertValidationRule(t, defaultCATWays.XKubernetesValidations, validationRule{
+			Rule:    "type(self) == int ? self > 0 : self.matches('^\\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\\s*[+-]\\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\\s*$')",
+			Message: "defaultCATWays must be a positive integer or a valid CAT ways expression",
+		})
+		assertValidationRule(t, defaultCATWays.XKubernetesValidations, validationRule{
+			Rule:    "type(self) == int || !self.matches('^\\s*(CBMMask\\s*-\\s*CBMMask|MinCBMBits\\s*-\\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\\s*[+-]\\s*[1-9][0-9]*)\\s*$')",
+			Message: "defaultCATWays expression is statically non-positive or contains unsimplified literal arithmetic",
 		})
 	})
 
@@ -55,15 +56,61 @@ func TestBulkheadRDTConfigSchema(t *testing.T) {
 
 	t.Run("CLOS CAT ways contract", func(t *testing.T) {
 		closCATWays := schemaProperty(t, schema, "closCATWays")
+		if closCATWays.AdditionalProperties == nil {
+			t.Fatal("closCATWays has no additionalProperties schema")
+		}
+		assertIntOrStringSchema(t, *closCATWays.AdditionalProperties, "closCATWays values")
 		assertValidationRule(t, closCATWays.XKubernetesValidations, validationRule{
-			Rule:    "self.all(k, self[k] > 0)",
-			Message: "all CLOS CAT ways must be greater than 0",
+			Rule:    "self.all(k, type(self[k]) == int ? self[k] > 0 : self[k].matches('^\\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\\s*[+-]\\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\\s*$'))",
+			Message: "all CLOS CAT ways must be positive integers or valid CAT ways expressions",
 		})
+		assertValidationRule(t, closCATWays.XKubernetesValidations, validationRule{
+			Rule:    "self.all(k, type(self[k]) == int || !self[k].matches('^\\s*(CBMMask\\s*-\\s*CBMMask|MinCBMBits\\s*-\\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\\s*[+-]\\s*[1-9][0-9]*)\\s*$'))",
+			Message: "CLOS CAT ways expressions must not be statically non-positive or contain unsimplified literal arithmetic",
+		})
+		assertValidationRule(t, closCATWays.XKubernetesValidations, validationRule{
+			Rule:    "self.all(k, k.matches('^\\S+$'))",
+			Message: "CLOS CAT ways keys must not be empty or contain whitespace",
+		})
+	})
 
-		assertClosCATWaysContract(t, []closCATWaysContractCase{
-			{name: "invalid: zero CLOS CAT ways", values: []int64{0}, valid: false},
-			{name: "invalid: negative CLOS CAT ways", values: []int64{-1}, valid: false},
-			{name: "valid: positive CLOS CAT ways", values: []int64{1, 2}, valid: true},
+	t.Run("CAT policy schema", func(t *testing.T) {
+		catPolicy := schemaProperty(t, schema, "catPolicy")
+
+		defaultPlacement := schemaProperty(t, catPolicy, "defaultPlacement")
+		assertEnumSchema(t, schemaProperty(t, defaultPlacement, "direction"), []string{"low", "high"}, "defaultPlacement.direction")
+		allowedBitUsages := schemaProperty(t, defaultPlacement, "allowedBitUsages")
+		if allowedBitUsages.Items == nil {
+			t.Fatal("defaultPlacement.allowedBitUsages has no item schema")
+		}
+		assertEnumSchema(t, *allowedBitUsages.Items, []string{"S", "H", "X"}, "defaultPlacement.allowedBitUsages items")
+
+		allocationGroups := schemaProperty(t, catPolicy, "allocationGroups")
+		if allocationGroups.Items == nil {
+			t.Fatal("allocationGroups has no item schema")
+		}
+		allocationGroup := *allocationGroups.Items
+		closIDs := schemaProperty(t, allocationGroup, "closIDs")
+		if closIDs.MinItems == nil || *closIDs.MinItems != 1 {
+			t.Fatalf("allocationGroups[].closIDs minItems = %v, want 1", closIDs.MinItems)
+		}
+		assertRequiredSchema(t, allocationGroup, "closIDs", "allocationGroups[]")
+		assertValidationRule(t, allocationGroup.XKubernetesValidations, validationRule{
+			Rule:    "self.closIDs.all(id, id.matches('^\\S+$'))",
+			Message: "allocation group CLOS IDs must not be empty or contain whitespace",
+		})
+		assertValidationRule(t, allocationGroup.XKubernetesValidations, validationRule{
+			Rule:    "self.closIDs.all(id, self.closIDs.exists_one(other, other == id))",
+			Message: "allocation group CLOS IDs must be unique",
+		})
+		if _, ok := allocationGroup.Properties["overlap"]; ok {
+			t.Fatal("allocationGroups[].overlap must not be exposed")
+		}
+
+		closPlacements := schemaProperty(t, catPolicy, "closPlacements")
+		assertValidationRule(t, closPlacements.XKubernetesValidations, validationRule{
+			Rule:    "self.all(k, k.matches('^\\S+$'))",
+			Message: "CLOS placement keys must not be empty or contain whitespace",
 		})
 	})
 }
@@ -80,7 +127,14 @@ type customResourceDefinition struct {
 
 type jsonSchema struct {
 	Properties             map[string]jsonSchema `json:"properties"`
-	Minimum                *float64              `json:"minimum"`
+	AdditionalProperties   *jsonSchema           `json:"additionalProperties"`
+	AnyOf                  []jsonSchema          `json:"anyOf"`
+	Enum                   []string              `json:"enum"`
+	Items                  *jsonSchema           `json:"items"`
+	MinItems               *int                  `json:"minItems"`
+	Required               []string              `json:"required"`
+	Type                   string                `json:"type"`
+	XIntOrString           bool                  `json:"x-kubernetes-int-or-string"`
 	XKubernetesValidations []validationRule      `json:"x-kubernetes-validations"`
 }
 
@@ -89,23 +143,11 @@ type validationRule struct {
 	Message string `json:"message"`
 }
 
-type minimumContractCase struct {
-	name  string
-	value float64
-	valid bool
-}
-
 type enableCATContractCase struct {
 	name              string
 	enableCAT         *bool
 	hasDefaultCATWays bool
 	valid             bool
-}
-
-type closCATWaysContractCase struct {
-	name   string
-	values []int64
-	valid  bool
 }
 
 func loadBulkheadRDTConfigSchema(t *testing.T) jsonSchema {
@@ -177,15 +219,44 @@ func assertValidationRule(t *testing.T, rules []validationRule, want validationR
 	t.Fatalf("validation rules = %#v, want rule %#v", rules, want)
 }
 
-func assertMinimumContract(t *testing.T, minimum float64, cases []minimumContractCase) {
+func assertIntOrStringSchema(t *testing.T, schema jsonSchema, name string) {
 	t.Helper()
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.value >= minimum; got != tt.valid {
-				t.Fatalf("value %v validity = %v, want %v for minimum %v", tt.value, got, tt.valid, minimum)
-			}
-		})
+	if !schema.XIntOrString {
+		t.Fatalf("%s x-kubernetes-int-or-string = false, want true", name)
 	}
+	types := map[string]bool{}
+	for _, candidate := range schema.AnyOf {
+		types[candidate.Type] = true
+	}
+	if !types["integer"] || !types["string"] {
+		t.Fatalf("%s anyOf types = %#v, want integer and string", name, types)
+	}
+}
+
+func assertEnumSchema(t *testing.T, schema jsonSchema, want []string, name string) {
+	t.Helper()
+	if len(schema.Enum) != len(want) {
+		t.Fatalf("%s enum = %#v, want exactly %#v", name, schema.Enum, want)
+	}
+	got := map[string]bool{}
+	for _, value := range schema.Enum {
+		got[value] = true
+	}
+	for _, value := range want {
+		if !got[value] {
+			t.Fatalf("%s enum = %#v, want value %s", name, schema.Enum, value)
+		}
+	}
+}
+
+func assertRequiredSchema(t *testing.T, schema jsonSchema, field string, name string) {
+	t.Helper()
+	for _, required := range schema.Required {
+		if required == field {
+			return
+		}
+	}
+	t.Fatalf("%s required = %#v, want %s", name, schema.Required, field)
 }
 
 func assertEnableCATContract(t *testing.T, cases []enableCATContractCase) {
@@ -195,24 +266,6 @@ func assertEnableCATContract(t *testing.T, cases []enableCATContractCase) {
 			got := tt.enableCAT == nil || !*tt.enableCAT || tt.hasDefaultCATWays
 			if got != tt.valid {
 				t.Fatalf("EnableCAT contract validity = %v, want %v", got, tt.valid)
-			}
-		})
-	}
-}
-
-func assertClosCATWaysContract(t *testing.T, cases []closCATWaysContractCase) {
-	t.Helper()
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			got := true
-			for _, value := range tt.values {
-				if value <= 0 {
-					got = false
-					break
-				}
-			}
-			if got != tt.valid {
-				t.Fatalf("CLOS CAT ways contract validity = %v, want %v", got, tt.valid)
 			}
 		})
 	}

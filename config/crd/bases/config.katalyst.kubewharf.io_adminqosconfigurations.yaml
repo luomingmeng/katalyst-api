@@ -853,21 +853,159 @@ spec:
                                 properties:
                                   closCATWays:
                                     additionalProperties:
-                                      format: int64
-                                      type: integer
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      x-kubernetes-int-or-string: true
                                     description: ClosCATWays maps pool names or CLOS
-                                      IDs to CAT way counts.
+                                      IDs to CAT way counts or expressions.
                                     type: object
                                     x-kubernetes-validations:
-                                    - message: all CLOS CAT ways must be greater than
-                                        0
-                                      rule: self.all(k, self[k] > 0)
+                                    - message: all CLOS CAT ways must be positive
+                                        integers or valid CAT ways expressions
+                                      rule: >-
+                                        self.all(k, type(self[k]) == int ? self[k] > 0 : self[k].matches('^\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\s*[+-]\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\s*$'))
+                                    - message: CLOS CAT ways expressions must not be
+                                        statically non-positive or contain unsimplified
+                                        literal arithmetic
+                                      rule: >-
+                                        self.all(k, type(self[k]) == int || !self[k].matches('^\s*(CBMMask\s*-\s*CBMMask|MinCBMBits\s*-\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\s*[+-]\s*[1-9][0-9]*)\s*$'))
+                                    - message: CLOS CAT ways keys must not be empty
+                                        or contain whitespace
+                                      rule: self.all(k, k.matches('^\S+$'))
+                                  catPolicy:
+                                    description: CATPolicy controls CAT bit placement
+                                      and deterministic allocation groups.
+                                    properties:
+                                      allocationGroups:
+                                        description: AllocationGroups pack ordered CLOS
+                                          IDs into non-overlapping CAT masks.
+                                        items:
+                                          description: CATAllocationGroup packs ordered
+                                            CLOS IDs into non-overlapping CAT masks.
+                                          properties:
+                                            allowedBitUsages:
+                                              description: |-
+                                                AllowedBitUsages is the default bit_usage constraint for CLOS IDs in this group. catPolicy.closPlacements may override it for individual group members.
+                                              items:
+                                                description: CATBitUsage is one resctrl
+                                                  info/L3/bit_usage class.
+                                                enum:
+                                                - S
+                                                - H
+                                                - X
+                                                type: string
+                                              type: array
+                                            closIDs:
+                                              description: ClosIDs is the ordered list
+                                                of pool names or CLOS IDs to pack.
+                                              items:
+                                                type: string
+                                              minItems: 1
+                                              type: array
+                                            direction:
+                                              description: Direction controls deterministic
+                                                packing direction.
+                                              enum:
+                                              - low
+                                              - high
+                                              type: string
+                                            name:
+                                              description: Name identifies this allocation
+                                                group in errors and diagnostics.
+                                              type: string
+                                          required:
+                                          - closIDs
+                                          type: object
+                                          x-kubernetes-validations:
+                                          - message: allocation group CLOS IDs must
+                                              not be empty or contain whitespace
+                                            rule: self.closIDs.all(id, id.matches('^\S+$'))
+                                          - message: allocation group CLOS IDs must
+                                              be unique
+                                            rule: self.closIDs.all(id, self.closIDs.exists_one(other,
+                                              other == id))
+                                        type: array
+                                      closPlacements:
+                                        additionalProperties:
+                                          description: CATPlacementPolicy controls where
+                                            CAT masks are selected for one CLOS.
+                                          properties:
+                                            allowedBitUsages:
+                                              description: |-
+                                                AllowedBitUsages restricts candidate CAT bits by resctrl bit_usage class.
+                                                Empty means all bits from CBMMask are available.
+                                              items:
+                                                description: CATBitUsage is one resctrl
+                                                  info/L3/bit_usage class.
+                                                enum:
+                                                - S
+                                                - H
+                                                - X
+                                                type: string
+                                              type: array
+                                            direction:
+                                              description: |-
+                                                Direction controls deterministic contiguous mask selection.
+                                                Empty means low.
+                                              enum:
+                                              - low
+                                              - high
+                                              type: string
+                                          type: object
+                                        description: |-
+                                          ClosPlacements maps pool names or CLOS IDs to per-CLOS placement policy.
+                                          It also applies to CLOS IDs that appear in allocationGroups and overrides the corresponding group default placement for non-empty fields.
+                                        type: object
+                                        x-kubernetes-validations:
+                                        - message: CLOS placement keys must not be empty
+                                            or contain whitespace
+                                          rule: self.all(k, k.matches('^\S+$'))
+                                      defaultPlacement:
+                                        description: CATPlacementPolicy controls where
+                                          CAT masks are selected for one CLOS.
+                                        properties:
+                                          allowedBitUsages:
+                                            description: |-
+                                              AllowedBitUsages restricts candidate CAT bits by resctrl bit_usage class.
+                                              Empty means all bits from CBMMask are available.
+                                            items:
+                                              description: CATBitUsage is one resctrl
+                                                info/L3/bit_usage class.
+                                              enum:
+                                              - S
+                                              - H
+                                              - X
+                                              type: string
+                                            type: array
+                                          direction:
+                                            description: |-
+                                              Direction controls deterministic contiguous mask selection.
+                                              Empty means low.
+                                            enum:
+                                            - low
+                                            - high
+                                            type: string
+                                        type: object
+                                    type: object
                                   defaultCATWays:
                                     description: DefaultCATWays is the default CAT
-                                      way count for non-root CLOS.
-                                    format: int64
-                                    minimum: 1
-                                    type: integer
+                                      way count or expression for non-root CLOS. Supported
+                                      expression variables are CBMMask and MinCBMBits.
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
+                                    x-kubernetes-validations:
+                                    - message: defaultCATWays must be a positive integer
+                                        or a valid CAT ways expression
+                                      rule: >-
+                                        type(self) == int ? self > 0 : self.matches('^\s*(CBMMask|MinCBMBits|[1-9][0-9]*)(\s*[+-]\s*(CBMMask|MinCBMBits|[1-9][0-9]*))?\s*$')
+                                    - message: defaultCATWays expression is statically
+                                        non-positive or contains unsimplified literal
+                                        arithmetic
+                                      rule: >-
+                                        type(self) == int || !self.matches('^\s*(CBMMask\s*-\s*CBMMask|MinCBMBits\s*-\s*(MinCBMBits|CBMMask)|[1-9][0-9]*\s*[+-]\s*[1-9][0-9]*)\s*$')
                                   enableCAT:
                                     description: EnableCAT controls whether the RDT
                                       CAT bulkhead plugin is enabled.
