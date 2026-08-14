@@ -87,29 +87,31 @@ func TestBulkheadRDTConfigSchema(t *testing.T) {
 		if allowedBitUsages.Items == nil {
 			t.Fatal("defaultPlacement.allowedBitUsages has no item schema")
 		}
-		assertEnumSchema(t, *allowedBitUsages.Items, []string{"S", "H", "X"}, "defaultPlacement.allowedBitUsages items")
+		assertEnumSchema(t, *allowedBitUsages.Items, []string{"*", "S", "H", "X"}, "defaultPlacement.allowedBitUsages items")
+		if allowedBitUsages.UniqueItems == nil || !*allowedBitUsages.UniqueItems {
+			t.Fatalf("defaultPlacement.allowedBitUsages uniqueItems = %v, want true", allowedBitUsages.UniqueItems)
+		}
+		assertValidationRule(t, allowedBitUsages.XKubernetesValidations, validationRule{
+			Rule:    "!(self.exists(usage, usage == '*') && self.size() > 1)",
+			Message: "* cat bit usage must not be combined with specific usages",
+		})
 
-		allocationGroups := schemaProperty(t, catPolicy, "allocationGroups")
-		if allocationGroups.Items == nil {
-			t.Fatal("allocationGroups has no item schema")
+		exclusiveClosIDs := schemaProperty(t, catPolicy, "exclusiveClosIDs")
+		if exclusiveClosIDs.Items == nil {
+			t.Fatal("exclusiveClosIDs has no item schema")
 		}
-		allocationGroup := *allocationGroups.Items
-		closIDs := schemaProperty(t, allocationGroup, "closIDs")
-		if closIDs.MinItems == nil || *closIDs.MinItems != 1 {
-			t.Fatalf("allocationGroups[].closIDs minItems = %v, want 1", closIDs.MinItems)
+		if exclusiveClosIDs.Items.Type != "string" {
+			t.Fatalf("exclusiveClosIDs item type = %q, want string", exclusiveClosIDs.Items.Type)
 		}
-		assertRequiredSchema(t, allocationGroup, "closIDs", "allocationGroups[]")
-		assertValidationRule(t, allocationGroup.XKubernetesValidations, validationRule{
-			Rule:    "self.closIDs.all(id, id.matches('^\\S+$'))",
-			Message: "allocation group CLOS IDs must not be empty or contain whitespace",
+		if exclusiveClosIDs.UniqueItems == nil || !*exclusiveClosIDs.UniqueItems {
+			t.Fatalf("exclusiveClosIDs uniqueItems = %v, want true", exclusiveClosIDs.UniqueItems)
+		}
+		assertValidationRule(t, exclusiveClosIDs.XKubernetesValidations, validationRule{
+			Rule:    "self.all(id, id.matches('^[^\\s*]+$'))",
+			Message: "exclusive CLOS IDs must be exact non-empty IDs without whitespace or wildcard",
 		})
-		assertValidationRule(t, allocationGroup.XKubernetesValidations, validationRule{
-			Rule:    "self.closIDs.all(id, self.closIDs.exists_one(other, other == id))",
-			Message: "allocation group CLOS IDs must be unique",
-		})
-		if _, ok := allocationGroup.Properties["overlap"]; ok {
-			t.Fatal("allocationGroups[].overlap must not be exposed")
-		}
+		assertAbsentSchema(t, catPolicy, "allocationGroups", "catPolicy")
+		assertAbsentSchema(t, catPolicy, "nonOverlapConstraints", "catPolicy")
 
 		closPlacements := schemaProperty(t, catPolicy, "closPlacements")
 		assertValidationRule(t, closPlacements.XKubernetesValidations, validationRule{
@@ -138,6 +140,7 @@ type jsonSchema struct {
 	MinItems               *int                  `json:"minItems"`
 	Required               []string              `json:"required"`
 	Type                   string                `json:"type"`
+	UniqueItems            *bool                 `json:"uniqueItems"`
 	XIntOrString           bool                  `json:"x-kubernetes-int-or-string"`
 	XKubernetesValidations []validationRule      `json:"x-kubernetes-validations"`
 }
@@ -211,6 +214,13 @@ func schemaProperty(t *testing.T, schema jsonSchema, name string) jsonSchema {
 		t.Fatalf("schema property %q not found", name)
 	}
 	return property
+}
+
+func assertAbsentSchema(t *testing.T, schema jsonSchema, field string, name string) {
+	t.Helper()
+	if _, ok := schema.Properties[field]; ok {
+		t.Fatalf("%s must not expose %s", name, field)
+	}
 }
 
 func assertValidationRule(t *testing.T, rules []validationRule, want validationRule) {

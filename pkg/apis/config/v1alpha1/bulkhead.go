@@ -72,7 +72,7 @@ type BulkheadRDTConfig struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(k, k.matches('^\\S+$'))",message="CLOS CAT ways keys must not be empty or contain whitespace"
 	// +optional
 	ClosCATWays map[string]intstr.IntOrString `json:"closCATWays,omitempty"`
-	// CATPolicy controls CAT bit placement and deterministic allocation groups.
+	// CATPolicy controls CAT bit placement and exclusive non-overlap policy.
 	// +optional
 	CATPolicy *CATPolicy `json:"catPolicy,omitempty"`
 }
@@ -85,21 +85,21 @@ const (
 	CATWaysExpressionVariableMinCATWays CATWaysExpressionVariable = "MinCATWays"
 )
 
-// CATPolicy controls CAT bit placement and deterministic allocation groups.
+// CATPolicy controls CAT bit placement and exclusive non-overlap policy.
 type CATPolicy struct {
-	// DefaultPlacement is used by CLOS IDs without a CLOS-specific placement
-	// or allocation group placement.
+	// DefaultPlacement is used by CLOS IDs without a CLOS-specific placement.
 	// +optional
 	DefaultPlacement *CATPlacementPolicy `json:"defaultPlacement,omitempty"`
-	// ClosPlacements maps pool names or CLOS IDs to per-CLOS placement policy.
-	// It also applies to CLOS IDs that appear in allocationGroups and overrides
-	// the corresponding group default placement for non-empty fields.
+	// ClosPlacements maps pool names, CLOS IDs or restricted trailing-prefix selectors to per-CLOS placement policy.
 	// +kubebuilder:validation:XValidation:rule="self.all(k, k.matches('^\\S+$'))",message="CLOS placement keys must not be empty or contain whitespace"
 	// +optional
 	ClosPlacements map[string]CATPlacementPolicy `json:"closPlacements,omitempty"`
-	// AllocationGroups pack ordered CLOS IDs into non-overlapping CAT masks.
+	// ExclusiveClosIDs lists exact canonical CLOS IDs that must not overlap with any other configured CLOS.
+	// Empty means the exclusive policy is explicitly disabled.
 	// +optional
-	AllocationGroups []CATAllocationGroup `json:"allocationGroups,omitempty"`
+	// +kubebuilder:validation:UniqueItems=true
+	// +kubebuilder:validation:XValidation:rule="self.all(id, id.matches('^[^\\s*]+$'))",message="exclusive CLOS IDs must be exact non-empty IDs without whitespace or wildcard"
+	ExclusiveClosIDs *[]string `json:"exclusiveClosIDs,omitempty"`
 }
 
 // CATPlacementPolicy controls where CAT masks are selected for one CLOS.
@@ -107,6 +107,8 @@ type CATPlacementPolicy struct {
 	// AllowedBitUsages restricts candidate CAT bits by resctrl bit_usage class.
 	// Empty means all ways supported by the domain are available.
 	// +optional
+	// +kubebuilder:validation:UniqueItems=true
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(usage, usage == '*') && self.size() > 1)",message="* cat bit usage must not be combined with specific usages"
 	AllowedBitUsages []CATBitUsage `json:"allowedBitUsages,omitempty"`
 	// Direction controls deterministic contiguous mask selection.
 	// Empty means low.
@@ -114,30 +116,12 @@ type CATPlacementPolicy struct {
 	Direction CATAllocationDirection `json:"direction,omitempty"`
 }
 
-// CATAllocationGroup packs ordered CLOS IDs into non-overlapping CAT masks.
-// +kubebuilder:validation:XValidation:rule="self.closIDs.all(id, id.matches('^\\S+$'))",message="allocation group CLOS IDs must not be empty or contain whitespace"
-// +kubebuilder:validation:XValidation:rule="self.closIDs.all(id, self.closIDs.exists_one(other, other == id))",message="allocation group CLOS IDs must be unique"
-type CATAllocationGroup struct {
-	// Name identifies this allocation group in errors and diagnostics.
-	// +optional
-	Name string `json:"name,omitempty"`
-	// ClosIDs is the ordered list of pool names or CLOS IDs to pack.
-	// +kubebuilder:validation:MinItems=1
-	ClosIDs []string `json:"closIDs"`
-	// AllowedBitUsages is the default bit_usage constraint for CLOS IDs in this
-	// group. catPolicy.closPlacements may override it for individual group members.
-	// +optional
-	AllowedBitUsages []CATBitUsage `json:"allowedBitUsages,omitempty"`
-	// Direction controls deterministic packing direction.
-	// +optional
-	Direction CATAllocationDirection `json:"direction,omitempty"`
-}
-
 // CATBitUsage is one resctrl info/L3/bit_usage class.
-// +kubebuilder:validation:Enum=S;H;X
+// +kubebuilder:validation:Enum=*;S;H;X
 type CATBitUsage string
 
 const (
+	CATBitUsageAll       CATBitUsage = "*"
 	CATBitUsageSoftware  CATBitUsage = "S"
 	CATBitUsageHardware  CATBitUsage = "H"
 	CATBitUsageExclusive CATBitUsage = "X"

@@ -853,59 +853,20 @@ spec:
                                 properties:
                                   catPolicy:
                                     description: CATPolicy controls CAT bit placement
-                                      and deterministic allocation groups.
+                                      and exclusive non-overlap policy.
                                     properties:
-                                      allocationGroups:
-                                        description: AllocationGroups pack ordered
-                                          CLOS IDs into non-overlapping CAT masks.
+                                      exclusiveClosIDs:
+                                        description: |-
+                                          ExclusiveClosIDs lists exact canonical CLOS IDs that must not overlap with any other configured CLOS.
+                                          Empty means the exclusive policy is explicitly disabled.
                                         items:
-                                          description: CATAllocationGroup packs ordered
-                                            CLOS IDs into non-overlapping CAT masks.
-                                          properties:
-                                            allowedBitUsages:
-                                              description: |-
-                                                AllowedBitUsages is the default bit_usage constraint for CLOS IDs in this
-                                                group. catPolicy.closPlacements may override it for individual group members.
-                                              items:
-                                                description: CATBitUsage is one resctrl
-                                                  info/L3/bit_usage class.
-                                                enum:
-                                                - S
-                                                - H
-                                                - X
-                                                type: string
-                                              type: array
-                                            closIDs:
-                                              description: ClosIDs is the ordered
-                                                list of pool names or CLOS IDs to
-                                                pack.
-                                              items:
-                                                type: string
-                                              minItems: 1
-                                              type: array
-                                            direction:
-                                              description: Direction controls deterministic
-                                                packing direction.
-                                              enum:
-                                              - low
-                                              - high
-                                              type: string
-                                            name:
-                                              description: Name identifies this allocation
-                                                group in errors and diagnostics.
-                                              type: string
-                                          required:
-                                          - closIDs
-                                          type: object
-                                          x-kubernetes-validations:
-                                          - message: allocation group CLOS IDs must
-                                              not be empty or contain whitespace
-                                            rule: self.closIDs.all(id, id.matches('^\S+$'))
-                                          - message: allocation group CLOS IDs must
-                                              be unique
-                                            rule: self.closIDs.all(id, self.closIDs.exists_one(other,
-                                              other == id))
+                                          type: string
                                         type: array
+                                        uniqueItems: true
+                                        x-kubernetes-validations:
+                                        - message: exclusive CLOS IDs must be exact
+                                            non-empty IDs without whitespace or wildcard
+                                          rule: self.all(id, id.matches('^[^\s*]+$'))
                                       closPlacements:
                                         additionalProperties:
                                           description: CATPlacementPolicy controls
@@ -919,11 +880,18 @@ spec:
                                                 description: CATBitUsage is one resctrl
                                                   info/L3/bit_usage class.
                                                 enum:
+                                                - '*'
                                                 - S
                                                 - H
                                                 - X
                                                 type: string
                                               type: array
+                                              uniqueItems: true
+                                              x-kubernetes-validations:
+                                              - message: '* cat bit usage must not
+                                                  be combined with specific usages'
+                                                rule: '!(self.exists(usage, usage
+                                                  == ''*'') && self.size() > 1)'
                                             direction:
                                               description: |-
                                                 Direction controls deterministic contiguous mask selection.
@@ -934,9 +902,7 @@ spec:
                                               type: string
                                           type: object
                                         description: |-
-                                          ClosPlacements maps pool names or CLOS IDs to per-CLOS placement policy.
-                                          It also applies to CLOS IDs that appear in allocationGroups and overrides
-                                          the corresponding group default placement for non-empty fields.
+                                          ClosPlacements maps pool names, CLOS IDs or restricted trailing-prefix selectors to per-CLOS placement policy.
                                         type: object
                                         x-kubernetes-validations:
                                         - message: CLOS placement keys must not be
@@ -944,8 +910,7 @@ spec:
                                           rule: self.all(k, k.matches('^\S+$'))
                                       defaultPlacement:
                                         description: |-
-                                          DefaultPlacement is used by CLOS IDs without a CLOS-specific placement
-                                          or allocation group placement.
+                                          DefaultPlacement is used by CLOS IDs without a CLOS-specific placement.
                                         properties:
                                           allowedBitUsages:
                                             description: |-
@@ -955,11 +920,18 @@ spec:
                                               description: CATBitUsage is one resctrl
                                                 info/L3/bit_usage class.
                                               enum:
+                                              - '*'
                                               - S
                                               - H
                                               - X
                                               type: string
                                             type: array
+                                            uniqueItems: true
+                                            x-kubernetes-validations:
+                                            - message: '* cat bit usage must not be
+                                                combined with specific usages'
+                                              rule: '!(self.exists(usage, usage ==
+                                                ''*'') && self.size() > 1)'
                                           direction:
                                             description: |-
                                               Direction controls deterministic contiguous mask selection.

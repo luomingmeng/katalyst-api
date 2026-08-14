@@ -31,6 +31,7 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 	enableCPUList := true
 	enableCAT := true
 	defaultCATWays := intstr.FromString("MaxCATWays")
+	exclusiveClosIDs := []string{"clos-a", "peer-b"}
 	config := QRMPluginConfig{
 		RDTConfig: &RDTConfig{
 			DisableRDT: &disableRDT,
@@ -47,7 +48,7 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 					},
 					CATPolicy: &CATPolicy{
 						DefaultPlacement: &CATPlacementPolicy{
-							AllowedBitUsages: []CATBitUsage{CATBitUsageSoftware},
+							AllowedBitUsages: []CATBitUsage{CATBitUsageAll},
 							Direction:        CATAllocationDirectionLow,
 						},
 						ClosPlacements: map[string]CATPlacementPolicy{
@@ -56,12 +57,7 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 								Direction:        CATAllocationDirectionHigh,
 							},
 						},
-						AllocationGroups: []CATAllocationGroup{{
-							Name:             "gpu-safe-shared",
-							ClosIDs:          []string{"share-00", "share-01"},
-							AllowedBitUsages: []CATBitUsage{CATBitUsageSoftware},
-							Direction:        CATAllocationDirectionLow,
-						}},
+						ExclusiveClosIDs: &exclusiveClosIDs,
 					},
 				},
 			},
@@ -98,11 +94,11 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 	if got := share01CATWays.IntValue(); got != 2 {
 		t.Fatalf("ClosCATWays[share-01] = %d, want 2", got)
 	}
-	if bulkheadRDTConfig.CATPolicy == nil || len(bulkheadRDTConfig.CATPolicy.AllocationGroups) != 1 {
-		t.Fatalf("CATPolicy allocation groups = %#v, want one group", bulkheadRDTConfig.CATPolicy)
+	if bulkheadRDTConfig.CATPolicy == nil || bulkheadRDTConfig.CATPolicy.ExclusiveClosIDs == nil {
+		t.Fatalf("CATPolicy exclusiveClosIDs = %#v, want pointer", bulkheadRDTConfig.CATPolicy)
 	}
-	if got := bulkheadRDTConfig.CATPolicy.AllocationGroups[0].AllowedBitUsages[0]; got != CATBitUsageSoftware {
-		t.Fatalf("AllowedBitUsages[0] = %s, want %s", got, CATBitUsageSoftware)
+	if got := *bulkheadRDTConfig.CATPolicy.ExclusiveClosIDs; len(got) != 2 || got[0] != "clos-a" || got[1] != "peer-b" {
+		t.Fatalf("ExclusiveClosIDs = %#v, want clos-a and peer-b", got)
 	}
 	if got := bulkheadRDTConfig.CATPolicy.DefaultPlacement.Direction; got != CATAllocationDirectionLow {
 		t.Fatalf("DefaultPlacement.Direction = %s, want %s", got, CATAllocationDirectionLow)
@@ -113,14 +109,14 @@ func TestQRMPluginConfigRDTAndBulkheadRDTConfig(t *testing.T) {
 
 	copied := got.DeepCopy()
 	copiedPolicy := copied.CPUPluginConfig.BulkheadConfig.BulkheadRDTConfig.CATPolicy
-	copiedPolicy.DefaultPlacement.AllowedBitUsages[0] = CATBitUsageHardware
+	copiedPolicy.DefaultPlacement.AllowedBitUsages[0] = CATBitUsageExclusive
 	share01Placement := copiedPolicy.ClosPlacements["share-01"]
-	share01Placement.AllowedBitUsages[0] = CATBitUsageHardware
+	share01Placement.AllowedBitUsages[0] = CATBitUsageExclusive
 	copiedPolicy.ClosPlacements["share-01"] = share01Placement
-	copiedPolicy.AllocationGroups[0].ClosIDs[0] = "mutated"
-	require.Equal(t, CATBitUsageSoftware, bulkheadRDTConfig.CATPolicy.DefaultPlacement.AllowedBitUsages[0])
+	(*copiedPolicy.ExclusiveClosIDs)[0] = "mutated"
+	require.Equal(t, CATBitUsageAll, bulkheadRDTConfig.CATPolicy.DefaultPlacement.AllowedBitUsages[0])
 	require.Equal(t, CATBitUsageSoftware, bulkheadRDTConfig.CATPolicy.ClosPlacements["share-01"].AllowedBitUsages[0])
-	require.Equal(t, "share-00", bulkheadRDTConfig.CATPolicy.AllocationGroups[0].ClosIDs[0])
+	require.Equal(t, "clos-a", (*bulkheadRDTConfig.CATPolicy.ExclusiveClosIDs)[0])
 }
 
 func TestCPUProvisionConfigFillDefaultSharePoolRoundTrip(t *testing.T) {
