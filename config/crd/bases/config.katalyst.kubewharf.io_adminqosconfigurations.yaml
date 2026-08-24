@@ -397,16 +397,16 @@ spec:
                             description: |-
                               LoadLowerBoundRatio is the lower bound ratio of node, if the load
                               of the node is greater than the load lower bound repeatedly, the
-                              cordon will be triggered
-                            maximum: 1
+                              cordon will be triggered. the load ratio is normalized by cpu count,
+                              so it may exceed 1 under heavy load
                             minimum: 0
                             type: number
                           loadUpperBoundRatio:
                             description: |-
                               LoadUpperBoundRatio is the upper bound ratio of node, if the load
                               of the node is greater than the load upper bound repeatedly, the
-                              eviction will be triggered
-                            maximum: 1
+                              eviction will be triggered. the load ratio is normalized by cpu count,
+                              so it may exceed 1 under heavy load
                             minimum: 0
                             type: number
                           metricRingSize:

@@ -917,17 +917,17 @@ type CPUSystemPressureEvictionConfig struct {
 
 	// LoadUpperBoundRatio is the upper bound ratio of node, if the load
 	// of the node is greater than the load upper bound repeatedly, the
-	// eviction will be triggered
+	// eviction will be triggered. the load ratio is normalized by cpu count,
+	// so it may exceed 1 under heavy load
 	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=1
 	// +optional
 	LoadUpperBoundRatio *float64 `json:"loadUpperBoundRatio,omitempty"`
 
 	// LoadLowerBoundRatio is the lower bound ratio of node, if the load
 	// of the node is greater than the load lower bound repeatedly, the
-	// cordon will be triggered
+	// cordon will be triggered. the load ratio is normalized by cpu count,
+	// so it may exceed 1 under heavy load
 	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=1
 	// +optional
 	LoadLowerBoundRatio *float64 `json:"loadLowerBoundRatio,omitempty"`
 
