@@ -898,9 +898,12 @@ func (in *CPUProvisionConfig) DeepCopyInto(out *CPUProvisionConfig) {
 	}
 	if in.Constraints != nil {
 		in, out := &in.Constraints, &out.Constraints
-		*out = make([]ControlKnobConstraints, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]ControlKnobConstraints)
+		if **in != nil {
+			**out = make([]ControlKnobConstraints, len(**in))
+			for i := range **in {
+				(*(*in))[i].DeepCopyInto(&((*(*out))[i]))
+			}
 		}
 	}
 	if in.ReclaimedCPUMaxRatio != nil {
@@ -1112,6 +1115,11 @@ func (in *ConfigUpdateStrategy) DeepCopy() *ConfigUpdateStrategy {
 func (in *ControlKnobConstraints) DeepCopyInto(out *ControlKnobConstraints) {
 	*out = *in
 	in.RestrictConstraints.DeepCopyInto(&out.RestrictConstraints)
+	if in.Enforce != nil {
+		in, out := &in.Enforce, &out.Enforce
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

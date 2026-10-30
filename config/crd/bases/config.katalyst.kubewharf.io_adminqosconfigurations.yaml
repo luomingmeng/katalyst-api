@@ -98,8 +98,25 @@ spec:
                             description: optional
                             properties:
                               constraints:
+                                description: |-
+                                  Constraints is the optional per-knob restrict bound set carried by this AQC.
+                                  The pointer-level tri-state is the contract; the slice is never merged with
+                                  Core's startup defaults:
+                                    - nil (field omitted): fall back to the Core flag startup defaults.
+                                    - &empty slice (rendered as "constraints: []"): explicitly disable all
+                                      restrict bounds for this config.
+                                    - &non-empty slice: this AQC fully overrides the bounds for the named
+                                      knobs; Core does not union its startup defaults on top.
+                                  "constraints: null" is not part of the write contract and users must not
+                                  emit it; readers may treat it as nil.
                                 items:
                                   properties:
+                                    enforce:
+                                      description: |-
+                                        Enforce selects shadow vs. rewrite. nil or false means the bound is only
+                                        observed/recorded (the delivered knob is never clamped); true means the
+                                        delivered knob is rewritten onto the composed bound on overshoot.
+                                      type: boolean
                                     maxLowerGap:
                                       description: MaxLowerGap is the maximum downward
                                         offset value from the baseline
@@ -119,6 +136,19 @@ spec:
                                     name:
                                       description: ControlKnobName defines available
                                         control knob key for provision policy
+                                      type: string
+                                    referencePolicy:
+                                      description: |-
+                                        ReferencePolicy provides the same-period baseline knob value a bound is
+                                        anchored on. It must be set together with TargetPolicy; exactly one set is
+                                        invalid and fails open without clamping.
+                                      type: string
+                                    targetPolicy:
+                                      description: |-
+                                        TargetPolicy names the policy whose delivered knob may be clamped. It must
+                                        be set together with ReferencePolicy for a bounded rule. When both are empty
+                                        the entry is name-only: it drives no bounded clamp and only feeds the core
+                                        static exact-restrict path for the knob names that path owns.
                                       type: string
                                   required:
                                   - name

@@ -263,11 +263,57 @@ type RestrictConstraints struct {
 type ControlKnobConstraints struct {
 	Name                ControlKnobName `json:"name"`
 	RestrictConstraints `json:",inline"`
+
+	// Enforce selects shadow vs. rewrite. nil or false means the bound is only
+	// observed/recorded (the delivered knob is never clamped); true means the
+	// delivered knob is rewritten onto the composed bound on overshoot.
+	// +optional
+	Enforce *bool `json:"enforce,omitempty"`
+
+	// TargetPolicy names the policy whose delivered knob may be clamped. It must
+	// be set together with ReferencePolicy for a bounded rule. When both are empty
+	// the entry is name-only: it drives no bounded clamp and only feeds the core
+	// static exact-restrict path for the knob names that path owns.
+	// +optional
+	TargetPolicy CPUProvisionPolicyName `json:"targetPolicy,omitempty"`
+	// ReferencePolicy provides the same-period baseline knob value a bound is
+	// anchored on. It must be set together with TargetPolicy; exactly one set is
+	// invalid and fails open without clamping.
+	// +optional
+	ReferencePolicy CPUProvisionPolicyName `json:"referencePolicy,omitempty"`
 }
 
+// CPUProvisionPolicyName names a provision policy whose delivered control knob can be
+// restrict-clamped against another policy's same-period knob. It is an open string
+// alias (not a closed CRD enum): known built-in values are provided as constants so
+// future policies can be adopted without an API change; an unregistered value fails
+// open in core (labeled "unknown" in metrics, with a warning).
+type CPUProvisionPolicyName string
+
+const (
+	// CPUProvisionPolicyCanonical is the steady/baseline policy output used as the
+	// reference for a restrict rule.
+	CPUProvisionPolicyCanonical CPUProvisionPolicyName = "canonical"
+	// CPUProvisionPolicyRama is the reclaimed/aggressive policy output that a
+	// restrict rule may clamp.
+	CPUProvisionPolicyRama CPUProvisionPolicyName = "rama"
+)
+
 type CPUProvisionConfig struct {
-	RegionIndicators []RegionIndicators       `json:"regionIndicators,omitempty"`
-	Constraints      []ControlKnobConstraints `json:"constraints,omitempty"`
+	RegionIndicators []RegionIndicators `json:"regionIndicators,omitempty"`
+
+	// Constraints is the optional per-knob restrict bound set carried by this AQC.
+	// The pointer-level tri-state is the contract; the slice is never merged with
+	// Core's startup defaults:
+	//   - nil (field omitted): fall back to the Core flag startup defaults.
+	//   - &empty slice (rendered as "constraints: []"): explicitly disable all
+	//     restrict bounds for this config.
+	//   - &non-empty slice: this AQC fully overrides the bounds for the named
+	//     knobs; Core does not union its startup defaults on top.
+	// "constraints: null" is not part of the write contract and users must not
+	// emit it; readers may treat it as nil.
+	// +optional
+	Constraints *[]ControlKnobConstraints `json:"constraints,omitempty"`
 
 	// ReclaimedCPUMaxRatio is the ratio of the maximum amount of CPUs that can be reclaimed at any time.
 	// +kubebuilder:validation:Minimum=0
